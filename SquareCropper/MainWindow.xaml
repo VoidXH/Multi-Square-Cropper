@@ -1,0 +1,33 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SquareCropper"
+        xmlns:void="clr-namespace:VoidX.WPF" x:Class="SquareCropper.MainWindow"
+        mc:Ignorable="d"
+        Title="Multi-Square Cropper" Height="450" Width="800"
+        PreviewKeyDown="OnKeyPress">
+    <Grid>
+        <ScrollViewer Margin="0,0,100,0" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible">
+            <Grid x:Name="scrollGrid" Width="1000" Height="1000">
+                <Image x:Name="imageDisplay" MouseUp="ImageClicked"/>
+                <Rectangle x:Name="selector" HorizontalAlignment="Left" VerticalAlignment="Top" Width="30" Height="30"
+                           Fill="#00000000" Stroke="#FFFFFF" StrokeThickness="1"/>
+            </Grid>
+        </ScrollViewer>
+        <Button Content="Open file" Margin="0,10,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="80" Click="OpenFile"/>
+        <TextBlock Margin="0,35,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="80" Text="Crop size:"/>
+        <void:NumericUpDown x:Name="cropSize" Margin="0,51,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="80"
+                            Minimum="30" Value="30" Maximum="1000" ValueChanged="CropSizeChanged"/>
+        <TextBlock Margin="0,75,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="80" Text="Change: +/-" TextAlignment="Right"/>
+        <TextBlock Margin="0,91,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="80" Text="Move: arrows"
+                   TextAlignment="Right"/>
+        <TextBlock Margin="0,112,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="80" Text="Next crop idx:"/>
+        <void:NumericUpDown x:Name="cropCount" Margin="0,128,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="80"
+                            Minimum="1" Value="1" Maximum="2147483647" IsEnabled="False"/>
+        <Button Content="Save crop" Margin="0,157,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="80" Click="SaveCrop"/>
+        <TextBlock Margin="0,177,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="80" Text="Save: Enter"
+                   TextAlignment="Right"/>
+    </Grid>
+</Window>
