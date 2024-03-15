@@ -80,14 +80,17 @@ namespace SquareCropper {
                 scrollGrid.Width = image.Width;
                 scrollGrid.Height = image.Height;
 
-                cropFileStart = Path.GetFileName(fileName)[..^4];
+                int extensionFrom = fileName.LastIndexOf('.');
+                cropFileStart = Path.GetFileName(fileName[0..extensionFrom]);
                 string dir = Path.GetDirectoryName(fileName);
                 string[] crops = Directory.GetFiles(dir, cropFileStart + "*");
                 cropFileStart = Path.Combine(dir, cropFileStart) + '_';
                 if (crops.Length != 0) {
                     int idxFrom = crops[^1].LastIndexOf('_'),
                         idxTo = crops[^1].LastIndexOf('.');
-                    if (int.TryParse(crops[^1].AsSpan(idxFrom + 1, idxTo - idxFrom - 1), out int idx)) {
+                    if (idxFrom < extensionFrom) {
+                        cropCount.Value = 1;
+                    } else if (int.TryParse(crops[^1].AsSpan(idxFrom + 1, idxTo - idxFrom - 1), out int idx)) {
                         cropCount.Value = idx + 1;
                     }
                 } else {
@@ -131,6 +134,10 @@ namespace SquareCropper {
 
             Rectangle rect = new((int)(selector.Margin.Left + .5), (int)(selector.Margin.Top + .5),
                 (int)(selector.Width + .5), (int)(selector.Height + .5));
+            if (rect.Left < 0 || rect.Top < 0 || rect.Left + rect.Width >= image.Width || rect.Top + rect.Height >= image.Height) {
+                MessageBox.Show("Selection overhangs the image.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
             // Save the cropped rectangle
             Bitmap crop = image.Clone(rect, image.PixelFormat);
