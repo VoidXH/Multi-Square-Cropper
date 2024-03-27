@@ -2,8 +2,10 @@
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 
 using Point = System.Windows.Point;
@@ -29,9 +31,16 @@ namespace SquareCropper {
         string cropFileStart;
 
         /// <summary>
+        /// When open, magnifies the selected area.
+        /// </summary>
+        Zoom zoom;
+
+        /// <summary>
         /// Add the components to the window.
         /// </summary>
-        public MainWindow() => InitializeComponent();
+        public MainWindow() {
+            InitializeComponent();
+        }
 
         /// <summary>
         /// Handle keyboard input before any other control could.
@@ -43,15 +52,19 @@ namespace SquareCropper {
             switch (e.Key) {
                 case Key.Left:
                     selector.Margin = new Thickness(selector.Margin.Left - 1, selector.Margin.Top, 0, 0);
+                    UpdateZoom();
                     break;
                 case Key.Up:
                     selector.Margin = new Thickness(selector.Margin.Left, selector.Margin.Top - 1, 0, 0);
+                    UpdateZoom();
                     break;
                 case Key.Right:
                     selector.Margin = new Thickness(selector.Margin.Left + 1, selector.Margin.Top, 0, 0);
+                    UpdateZoom();
                     break;
                 case Key.Down:
                     selector.Margin = new Thickness(selector.Margin.Left, selector.Margin.Top + 1, 0, 0);
+                    UpdateZoom();
                     break;
                 case Key.Add:
                     cropSize.Value++;
@@ -107,6 +120,7 @@ namespace SquareCropper {
             int selectorSize = (int)(selector.Width / 2 + .5);
             Point position = e.GetPosition(imageDisplay);
             selector.Margin = new Thickness(position.X - selectorSize, position.Y - selectorSize, 0, 0);
+            UpdateZoom();
         }
 
         /// <summary>
@@ -121,6 +135,7 @@ namespace SquareCropper {
                 int offset = oldSize < cropSize.Value ? -1 : 1;
                 selector.Margin = new Thickness(selector.Margin.Left + offset, selector.Margin.Top + offset, 0, 0);
             }
+            UpdateZoom();
         }
 
         /// <summary>
@@ -132,27 +147,43 @@ namespace SquareCropper {
                 return;
             }
 
-            Rectangle rect = new((int)(selector.Margin.Left + .5), (int)(selector.Margin.Top + .5),
-                (int)(selector.Width + .5), (int)(selector.Height + .5));
-            if (rect.Left < 0 || rect.Top < 0 || rect.Left + rect.Width >= image.Width || rect.Top + rect.Height >= image.Height) {
+            Bitmap crop = GetSelectedArea();
+            if (crop == null) {
                 MessageBox.Show("Selection overhangs the image.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-
-            // Save the cropped rectangle
-            Bitmap crop = image.Clone(rect, image.PixelFormat);
             crop.Save($"{cropFileStart}{cropCount.Value:000}.png", ImageFormat.Png);
 
             // Remove it from the original image
-            for (int x = 0; x < crop.Width; x++) {
-                for (int y = 0; y < crop.Height; y++) {
-                    image.SetPixel(rect.Left + x, rect.Top + y, Color.White);
+            for (int x0 = (int)(selector.Margin.Left + .5), x = 0; x < crop.Width; x++) {
+                for (int y0 = (int)(selector.Margin.Top + .5), y = 0; y < crop.Height; y++) {
+                    image.SetPixel(x0 + x, y0 + y, Color.White);
                 }
             }
             image.Save(fileName, ImageFormat.Png);
             UpdateImage();
 
             cropCount.Value++;
+        }
+
+        /// <summary>
+        /// Opens a dialog showing the selected area, magnified.
+        /// </summary>
+        void OpenZoom(object _, RoutedEventArgs e) {
+            zoom ??= new Zoom();
+            zoom.Show();
+        }
+
+        /// <summary>
+        /// Crops the part of the image which the user selected. Returns null when the selection overhangs the image.
+        /// </summary>
+        Bitmap GetSelectedArea() {
+            Rectangle rect = new((int)(selector.Margin.Left + .5), (int)(selector.Margin.Top + .5),
+                (int)(selector.Width + .5), (int)(selector.Height + .5));
+            if (rect.Left < 0 || rect.Top < 0 || rect.Left + rect.Width >= image.Width || rect.Top + rect.Height >= image.Height) {
+                return null;
+            }
+            return image.Clone(rect, image.PixelFormat);
         }
 
         /// <summary>
@@ -170,6 +201,36 @@ namespace SquareCropper {
             bitmapImage.StreamSource = ms;
             bitmapImage.EndInit();
             imageDisplay.Source = bitmapImage;
+
+            UpdateZoom();
         }
+
+        /// <summary>
+        /// Update the magnified image if there is a window for it.
+        /// </summary>
+        void UpdateZoom() {
+            if (zoom == null) {
+                return;
+            }
+
+            Bitmap selection = GetSelectedArea();
+            if (selection == null) {
+                return;
+            }
+
+            // Source: https://stackoverflow.com/questions/26260654
+            nint handle = selection.GetHbitmap();
+            try {
+                BitmapSource source =
+                    Imaging.CreateBitmapSourceFromHBitmap(handle, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                zoom.Update(source);
+            } finally {
+                DeleteObject(handle);
+            }
+        }
+
+        [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool DeleteObject([In] IntPtr hObject);
     }
 }

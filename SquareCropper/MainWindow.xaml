@@ -29,5 +29,6 @@
         <Button Content="Save crop" Margin="0,157,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="80" Click="SaveCrop"/>
         <TextBlock Margin="0,177,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="80" Text="Save: Enter"
                    TextAlignment="Right"/>
+        <Button Content="Open zoom" Margin="0,217,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="80" Click="OpenZoom"/>
     </Grid>
 </Window>
